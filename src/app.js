@@ -18,19 +18,6 @@ export default () => {
     resources,
   });
 
-  yup.setLocale({
-    string: {
-      url: () => ({ key: 'errorsTexts.invalidUrl' }),
-    },
-  });
-
-  const schema = yup.string().lowercase().trim().url();
-
-  const validate = (url) => schema
-    .validate(url)
-    .then(() => '')
-    .catch((e) => e.message);
-
   const initialState = {
     urlState: 'valid',
     feedbackText: null,
@@ -39,24 +26,41 @@ export default () => {
 
   const state = onChange(initialState, view(initialState, elements));
 
+  yup.setLocale({
+    mixed: {
+      notOneOf: () => 'errorsTexts.notUniq',
+    },
+    string: {
+      url: () => 'errorsTexts.invalidUrl',
+    },
+  });
+
+  const validate = (url) => {
+    const schema = yup
+      .string()
+      .lowercase()
+      .trim()
+      .url()
+      .notOneOf(state.urlsList);
+
+    return schema
+      .validate(url)
+      .then(() => 'successText')
+      .catch((e) => e.message);
+  };
+
   elements.form.addEventListener('submit', (e) => {
     e.preventDefault();
 
     const formData = new FormData(e.target);
-    const url = formData.get('url');
-    validate(url).then((err) => {
-      const isUniqBool = state.urlsList.includes(url);
-
-      if (err === '' && !isUniqBool) {
+    const url = formData.get('url').trim();
+    validate(url).then((feedbackPath) => {
+      state.feedbackText = i18nInstance.t(feedbackPath);
+      if (feedbackPath === 'successText') {
         state.urlState = 'valid';
-        state.feedbackText = i18nInstance.t('successText');
         state.urlsList.push(url);
-      } else if (err === '' && isUniqBool) {
-        state.urlState = 'invalid';
-        state.feedbackText = i18nInstance.t('errorsTexts.notUniq');
       } else {
         state.urlState = 'invalid';
-        state.feedbackText = i18nInstance.t(err.key);
       }
     });
   });
