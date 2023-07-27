@@ -1,21 +1,28 @@
-export default (state, elements) => () => {
+export default (state, elements) => (path, curVal, prevVal) => {
   const { form, input, feedbackEl } = elements;
 
-  if (state.urlState === 'valid') {
-    input.classList.remove('is-invalid');
+  switch (path) {
+    case 'urlState':
+      if (curVal === 'valid') {
+        input.classList.remove('is-invalid');
+        form.reset();
+      } else {
+        input.classList.add('is-invalid');
+      }
+      break;
 
-    feedbackEl.classList.remove('text-danger');
-    feedbackEl.classList.add('text-success');
+    case 'feedback.feedbackText':
+      feedbackEl.textContent = state.feedback.feedbackText;
+      break;
 
-    form.reset();
-  } else {
-    input.classList.remove('is-valid');
-    input.classList.add('is-invalid');
+    case 'feedback.feedbackColor':
+      feedbackEl.classList.remove(`text-${prevVal}`);
+      feedbackEl.classList.add(`text-${curVal}`);
+      break;
 
-    feedbackEl.classList.remove('text-success');
-    feedbackEl.classList.add('text-danger');
+    default:
+      break;
   }
 
   input.focus();
-  feedbackEl.textContent = state.feedbackText;
 };

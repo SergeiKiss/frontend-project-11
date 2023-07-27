@@ -4,6 +4,8 @@ export default {
     errorsTexts: {
       invalidUrl: 'Ссылка должна быть валидным URL',
       notUniq: 'RSS уже существует',
+      networkErr: 'Ошибка сети',
+      invallidRSS: 'Ресурс не содержит валидный RSS',
     },
   },
 };

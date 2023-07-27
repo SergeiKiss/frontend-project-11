@@ -1,6 +1,7 @@
 import onChange from 'on-change'; // eslint-disable-line
 import * as yup from 'yup'; // eslint-disable-line
 import i18next from 'i18next'; // eslint-disable-line
+import axios from 'axios';  // eslint-disable-line
 import view from './view.js';
 import resources from './locales/index.js';
 
@@ -19,8 +20,11 @@ export default () => {
   });
 
   const initialState = {
-    urlState: 'valid',
-    feedbackText: null,
+    urlState: null,
+    feedback: {
+      feedbackText: null,
+      feedbackColor: null,
+    },
     urlsList: [],
   };
 
@@ -45,8 +49,8 @@ export default () => {
 
     return schema
       .validate(url)
-      .then(() => 'successText')
-      .catch((e) => e.message);
+      .then(() => [true, 'successText'])
+      .catch((e) => [false, e.message]);
   };
 
   elements.form.addEventListener('submit', (e) => {
@@ -54,13 +58,30 @@ export default () => {
 
     const formData = new FormData(e.target);
     const url = formData.get('url').trim();
-    validate(url).then((feedbackPath) => {
-      state.feedbackText = i18nInstance.t(feedbackPath);
-      if (feedbackPath === 'successText') {
-        state.urlState = 'valid';
-        state.urlsList.push(url);
+    validate(url).then(([isSuccessValidationBool, feedbackPath]) => {
+      if (isSuccessValidationBool) {
+        axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
+          .then((response) => {
+            if (response.status === 200) return response.data;
+            throw new Error();
+          })
+          .then((data) => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(data.contents, 'application/xml');
+            const items = doc.querySelectorAll('item');
+            console.log(items);
+          })
+          .catch(() => {
+            state.feedback.feedbackText = i18nInstance.t('errorsTexts.networkErr');
+            state.feedback.feedbackColor = 'danger';
+          });
+        // state.urlState = 'valid';
+        // state.feedback.feedbackColor = 'success';
+        // state.urlsList.push(url);
       } else {
         state.urlState = 'invalid';
+        state.feedback.feedbackColor = 'danger';
+        state.feedback.feedbackText = i18nInstance.t(feedbackPath);
       }
     });
   });
