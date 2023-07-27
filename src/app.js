@@ -107,8 +107,12 @@ export default () => {
             state.urlsList.push(url);
             state.feedback.feedbackText = i18nInstance.t(feedbackPath);
           })
-          .catch(() => {
-            state.feedback.feedbackText = i18nInstance.t('feedbackTexts.errorsTexts.networkErr');
+          .catch((error) => {
+            if (error instanceof TypeError) {
+              state.feedback.feedbackText = i18nInstance.t('feedbackTexts.errorsTexts.invallidRSS');
+            } else {
+              state.feedback.feedbackText = i18nInstance.t('feedbackTexts.errorsTexts.networkErr');
+            }
             state.feedback.feedbackColor = 'danger';
           });
       } else {
