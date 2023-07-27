@@ -10,6 +10,8 @@ export default () => {
     form: document.querySelector('form'),
     input: document.querySelector('input'),
     feedbackEl: document.querySelector('.feedback'),
+    postsContainer: document.querySelector('.posts'),
+    feedsContainer: document.querySelector('.feeds'),
   };
 
   const i18nInstance = i18next.createInstance();
@@ -26,16 +28,21 @@ export default () => {
       feedbackColor: null,
     },
     urlsList: [],
+    feedsBody: {
+      lastID: 0,
+      feeds: [],
+      posts: [],
+    },
   };
 
   const state = onChange(initialState, view(initialState, elements));
 
   yup.setLocale({
     mixed: {
-      notOneOf: () => 'errorsTexts.notUniq',
+      notOneOf: () => 'feedbackTexts.errorsTexts.notUniq',
     },
     string: {
-      url: () => 'errorsTexts.invalidUrl',
+      url: () => 'feedbackTexts.errorsTexts.invalidUrl',
     },
   });
 
@@ -49,13 +56,14 @@ export default () => {
 
     return schema
       .validate(url)
-      .then(() => [true, 'successText'])
+      .then(() => [true, 'feedbackTexts.successText'])
       .catch((e) => [false, e.message]);
   };
 
   elements.form.addEventListener('submit', (e) => {
     e.preventDefault();
 
+    state.urlState = 'processing';
     const formData = new FormData(e.target);
     const url = formData.get('url').trim();
     validate(url).then(([isSuccessValidationBool, feedbackPath]) => {
@@ -68,16 +76,41 @@ export default () => {
           .then((data) => {
             const parser = new DOMParser();
             const doc = parser.parseFromString(data.contents, 'application/xml');
-            const items = doc.querySelectorAll('item');
-            console.log(items);
+
+            state.feedsBody.lastID += 1;
+            const id = state.feedsBody.lastID;
+            const feedTitle = doc.querySelector('title').textContent;
+            const feedDescription = doc.querySelector('description').textContent;
+            state.feedsBody.feeds.unshift({
+              title: feedTitle,
+              description: feedDescription,
+              id,
+            });
+
+            const posts = doc.querySelectorAll('item');
+            const postsData = [];
+            posts.forEach((post) => {
+              const postTitle = post.querySelector('title').textContent;
+              const postDescription = post.querySelector('description').textContent;
+              const postLink = post.querySelector('link').textContent;
+              postsData.push({
+                title: postTitle,
+                description: postDescription,
+                feedID: id,
+                href: postLink,
+              });
+            });
+            state.feedsBody.posts = [...postsData, ...state.feedsBody.posts];
+
+            state.urlState = 'valid';
+            state.feedback.feedbackColor = 'success';
+            state.urlsList.push(url);
+            state.feedback.feedbackText = i18nInstance.t(feedbackPath);
           })
           .catch(() => {
-            state.feedback.feedbackText = i18nInstance.t('errorsTexts.networkErr');
+            state.feedback.feedbackText = i18nInstance.t('feedbackTexts.errorsTexts.networkErr');
             state.feedback.feedbackColor = 'danger';
           });
-        // state.urlState = 'valid';
-        // state.feedback.feedbackColor = 'success';
-        // state.urlsList.push(url);
       } else {
         state.urlState = 'invalid';
         state.feedback.feedbackColor = 'danger';
