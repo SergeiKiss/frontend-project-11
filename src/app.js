@@ -12,6 +12,12 @@ export default () => {
     feedbackEl: document.querySelector('.feedback'),
     postsContainer: document.querySelector('.posts'),
     feedsContainer: document.querySelector('.feeds'),
+    modal: {
+      modalTitle: document.querySelector('.modal-title'),
+      modalBody: document.querySelector('.modal-body'),
+      modalLink: document.querySelector('.modal-content').querySelector('a'),
+      modalCloseBtns: document.querySelector('.modal-content').querySelectorAll('button'),
+    },
   };
 
   const i18nInstance = i18next.createInstance();

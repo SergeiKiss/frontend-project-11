@@ -24,10 +24,25 @@ const createCard = (title) => {
   ul.classList.add('list-group', 'border-0', 'rounded-0');
   cardDiv.append(ul);
 
-  return { card: cardDiv, ul };
+  return {
+    card: cardDiv,
+    ul,
+  };
 };
 
-const createPostEl = ({ title, feedID, href }) => {
+const createPostEl = ({
+  title,
+  description,
+  feedID,
+  href,
+}, elements) => {
+  const {
+    modalTitle,
+    modalBody,
+    modalLink,
+    modalCloseBtns,
+  } = elements.modal;
+
   const li = document.createElement('li');
   li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-start', 'border-0', 'border-end-0');
 
@@ -48,10 +63,34 @@ const createPostEl = ({ title, feedID, href }) => {
   button.textContent = i18nInstance.t('feedsBodyTexts.browseButton');
   li.append(button);
 
+  button.addEventListener('click', () => {
+    modalTitle.textContent = title;
+    modalBody.textContent = description;
+    modalLink.setAttribute('href', href);
+
+    a.classList.remove('fw-bold');
+    a.classList.add('fw-normal', 'link-secondary');
+  });
+
+  a.addEventListener('click', () => {
+    a.classList.remove('fw-bold');
+    a.classList.add('fw-normal', 'link-secondary');
+  });
+
+  modalCloseBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      modalTitle.textContent = '';
+      modalBody.textContent = '';
+    });
+  });
+
   return li;
 };
 
-const createFeedEl = ({ title, description }) => {
+const createFeedEl = ({
+  title,
+  description,
+}) => {
   const li = document.createElement('li');
   li.classList.add('list-group-item', 'border-0', 'border-end-0');
 
@@ -69,7 +108,10 @@ const createFeedEl = ({ title, description }) => {
 };
 
 const render = (state, elements) => {
-  const { postsContainer, feedsContainer } = elements;
+  const {
+    postsContainer,
+    feedsContainer,
+  } = elements;
   postsContainer.innerHTML = '';
   feedsContainer.innerHTML = '';
 
@@ -77,7 +119,7 @@ const render = (state, elements) => {
   const feedsCardObj = createCard(i18nInstance.t('feedsBodyTexts.feedsHeader'));
 
   state.feedsBody.posts.forEach((postData) => {
-    const postEl = createPostEl(postData);
+    const postEl = createPostEl(postData, elements);
     postsCardObj.ul.append(postEl);
   });
 
@@ -91,7 +133,11 @@ const render = (state, elements) => {
 };
 
 export default (state, elements) => (path, curVal, prevVal) => {
-  const { form, input, feedbackEl } = elements;
+  const {
+    form,
+    input,
+    feedbackEl,
+  } = elements;
 
   switch (path) {
     case 'urlState':
