@@ -1,4 +1,3 @@
-import onChange from 'on-change'; // eslint-disable-line
 import * as yup from 'yup'; // eslint-disable-line
 import i18next from 'i18next'; // eslint-disable-line
 import axios from 'axios';  // eslint-disable-line
@@ -35,13 +34,15 @@ export default () => {
     },
     urlsList: [],
     feedsBody: {
-      lastID: 0,
+      state: 'fulfilled',
+      lastFeedID: 0,
+      lastPostID: 0,
       feeds: [],
       posts: [],
     },
   };
 
-  const state = onChange(initialState, view(initialState, elements));
+  const state = view(initialState, elements, i18nInstance);
 
   yup.setLocale({
     mixed: {
@@ -83,27 +84,31 @@ export default () => {
             const parser = new DOMParser();
             const doc = parser.parseFromString(data.contents, 'application/xml');
 
-            state.feedsBody.lastID += 1;
-            const id = state.feedsBody.lastID;
+            state.feedsBody.lastFeedID += 1;
+            const feedID = state.feedsBody.lastFeedID;
             const feedTitle = doc.querySelector('title').textContent;
             const feedDescription = doc.querySelector('description').textContent;
             state.feedsBody.feeds.unshift({
               title: feedTitle,
               description: feedDescription,
-              id,
+              id: feedID,
             });
 
             const posts = doc.querySelectorAll('item');
             const postsData = [];
             posts.forEach((post) => {
+              state.feedsBody.lastPostID += 1;
+              const postID = state.feedsBody.lastPostID;
               const postTitle = post.querySelector('title').textContent;
               const postDescription = post.querySelector('description').textContent;
               const postLink = post.querySelector('link').textContent;
               postsData.push({
                 title: postTitle,
                 description: postDescription,
-                feedID: id,
+                feedID,
+                id: postID,
                 href: postLink,
+                visited: false,
               });
             });
             state.feedsBody.posts = [...postsData, ...state.feedsBody.posts];
