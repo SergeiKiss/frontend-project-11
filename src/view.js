@@ -5,6 +5,14 @@ export default (initialState, elements, i18nInstance) => {
     form,
     input,
     feedbackEl,
+    postsContainer,
+    feedsContainer,
+    modal: {
+      modalTitle,
+      modalBody,
+      modalLink,
+      modalCloseBtns,
+    },
   } = elements;
 
   const createCard = (title) => {
@@ -37,13 +45,6 @@ export default (initialState, elements, i18nInstance) => {
     href,
     visited,
   }, state) => {
-    const {
-      modalTitle,
-      modalBody,
-      modalLink,
-      modalCloseBtns,
-    } = elements.modal;
-
     const li = document.createElement('li');
     li.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-start', 'border-0', 'border-end-0');
 
@@ -73,17 +74,25 @@ export default (initialState, elements, i18nInstance) => {
       modalBody.textContent = description;
       modalLink.setAttribute('href', href);
 
-      const index = id - 1;
-      state.feedsBody.posts[index].visited = true;
-      state.feedsBody.state = 'processing';
-      state.feedsBody.state = 'fulfilled';
+      a.classList.remove('fw-bold');
+      a.classList.add('fw-normal', 'link-secondary');
+      state.feedsBody.posts.forEach((post) => {
+        if (id === post.id) {
+          const postToChange = post;
+          postToChange.visited = true;
+        }
+      });
     });
 
     a.addEventListener('click', () => {
-      const index = id - 1;
-      state.feedsBody.posts[index].visited = true;
-      state.feedsBody.state = 'processing';
-      state.feedsBody.state = 'fulfilled';
+      a.classList.remove('fw-bold');
+      a.classList.add('fw-normal', 'link-secondary');
+      state.feedsBody.posts.forEach((post) => {
+        if (id === post.id) {
+          const postToChange = post;
+          postToChange.visited = true;
+        }
+      });
     });
 
     modalCloseBtns.forEach((btn) => {
@@ -117,10 +126,6 @@ export default (initialState, elements, i18nInstance) => {
   };
 
   const render = (state) => {
-    const {
-      postsContainer,
-      feedsContainer,
-    } = elements;
     postsContainer.innerHTML = '';
     feedsContainer.innerHTML = '';
 
@@ -147,6 +152,7 @@ export default (initialState, elements, i18nInstance) => {
         if (curVal === 'valid') {
           input.classList.remove('is-invalid');
           form.reset();
+          input.focus();
           render(state);
         } else if (curVal === 'invalid') {
           input.classList.add('is-invalid');
@@ -155,6 +161,7 @@ export default (initialState, elements, i18nInstance) => {
 
       case 'feedback.feedbackText':
         feedbackEl.textContent = state.feedback.feedbackText;
+        input.focus();
         break;
 
       case 'feedback.feedbackColor':
@@ -162,15 +169,9 @@ export default (initialState, elements, i18nInstance) => {
         feedbackEl.classList.add(`text-${curVal}`);
         break;
 
-      case 'feedsBody.state':
-        if (curVal === 'processing') render(state);
-        break;
-
       default:
         break;
     }
-
-    input.focus();
   });
 
   return state;

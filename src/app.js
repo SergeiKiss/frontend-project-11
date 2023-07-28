@@ -73,6 +73,7 @@ export default () => {
     state.urlState = 'processing';
     const formData = new FormData(e.target);
     const url = formData.get('url').trim();
+
     validate(url).then(([isSuccessValidationBool, feedbackPath]) => {
       if (isSuccessValidationBool) {
         axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
