@@ -7,6 +7,7 @@ export default {
         notUniq: 'RSS уже существует',
         networkErr: 'Ошибка сети',
         invallidRSS: 'Ресурс не содержит валидный RSS',
+        notEmpty: 'Не должно быть пустым',
       },
     },
     feedsBodyTexts: {

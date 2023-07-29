@@ -57,6 +57,7 @@ export default () => {
     },
     string: {
       url: () => 'feedbackTexts.errorsTexts.invalidUrl',
+      min: () => 'feedbackTexts.errorsTexts.notEmpty',
     },
   });
 
@@ -66,6 +67,7 @@ export default () => {
       .lowercase()
       .trim()
       .url()
+      .min(1)
       .notOneOf(state.urlsList);
 
     return schema
