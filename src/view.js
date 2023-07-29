@@ -15,7 +15,7 @@ export default (initialState, elements, i18nInstance) => {
     },
   } = elements;
 
-  const createCard = (title) => {
+  const createCard = (title, ulID) => {
     const cardDiv = document.createElement('div');
     cardDiv.classList.add('card', 'border-0');
 
@@ -28,6 +28,7 @@ export default (initialState, elements, i18nInstance) => {
     cardDiv.append(cardBodyDiv);
 
     const ul = document.createElement('ul');
+    ul.setAttribute('id', ulID);
     ul.classList.add('list-group', 'border-0', 'rounded-0');
     cardDiv.append(ul);
 
@@ -129,8 +130,8 @@ export default (initialState, elements, i18nInstance) => {
     postsContainer.innerHTML = '';
     feedsContainer.innerHTML = '';
 
-    const postsCardObj = createCard(i18nInstance.t('feedsBodyTexts.postsHeader'));
-    const feedsCardObj = createCard(i18nInstance.t('feedsBodyTexts.feedsHeader'));
+    const postsCardObj = createCard(i18nInstance.t('feedsBodyTexts.postsHeader'), 'posts-list');
+    const feedsCardObj = createCard(i18nInstance.t('feedsBodyTexts.feedsHeader'), 'feeds-list');
 
     state.feedsBody.posts.forEach((postData) => {
       const postEl = createPostEl(postData, state);
@@ -167,6 +168,16 @@ export default (initialState, elements, i18nInstance) => {
       case 'feedback.feedbackColor':
         feedbackEl.classList.remove(`text-${prevVal}`);
         feedbackEl.classList.add(`text-${curVal}`);
+        break;
+
+      case 'updateTracking.updateTrackingState':
+        if (curVal === 'fulfilled') {
+          for (let i = 0; i < state.updateTracking.newPosts.length; i += 1) {
+            const postsCardObj = document.querySelector('#posts-list');
+            const postEl = createPostEl(state.updateTracking.newPosts.pop(), state);
+            postsCardObj.prepend(postEl);
+          }
+        }
         break;
 
       default:

@@ -1,6 +1,6 @@
 import * as yup from 'yup'; // eslint-disable-line
 import i18next from 'i18next'; // eslint-disable-line
-import axios from 'axios';  // eslint-disable-line
+import axios from 'axios'; // eslint-disable-line
 import view from './view.js';
 import resources from './locales/index.js';
 
@@ -28,17 +28,20 @@ export default () => {
 
   const initialState = {
     urlState: null,
+    urlsList: [],
     feedback: {
       feedbackText: null,
       feedbackColor: null,
     },
-    urlsList: [],
     feedsBody: {
-      state: 'fulfilled',
       lastFeedID: 0,
       lastPostID: 0,
       feeds: [],
       posts: [],
+    },
+    updateTracking: {
+      updateTrackingState: null,
+      newPosts: [],
     },
   };
 
@@ -67,6 +70,68 @@ export default () => {
       .catch((e) => [false, e.message]);
   };
 
+  const getDOMobjFromURL = (url) => axios
+    .get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
+    .then((response) => {
+      if (response.status === 200) return response.data;
+      throw new Error();
+    })
+    .then((data) => {
+      const parser = new DOMParser();
+      const parsedData = parser.parseFromString(data.contents, 'application/xml');
+      return parsedData;
+    });
+
+  const updateTracking = () => {
+    setTimeout(() => {
+      state.updateTracking.updateTrackingState = 'processing';
+      const { feeds } = state.feedsBody;
+      feeds.forEach((feed) => {
+        let skipNeeded = false;
+        getDOMobjFromURL(feed.url).then((doc) => {
+          const posts = doc.querySelectorAll('item');
+          posts.forEach((post) => {
+            if (skipNeeded) return;
+            const postTitle = post.querySelector('title').textContent;
+            let postFound = false;
+            state.feedsBody.posts.forEach((p) => {
+              if (postFound) return;
+              if (feed.id === p.feedID && postTitle === p.title) postFound = true;
+            });
+            if (postFound) {
+              skipNeeded = true;
+            } else {
+              state.feedsBody.lastPostID += 1;
+              const postID = state.feedsBody.lastPostID;
+              const postDescription = post.querySelector('description').textContent;
+              const postLink = post.querySelector('link').textContent;
+              const postData = {
+                title: postTitle,
+                description: postDescription,
+                feedID: feed.id,
+                id: postID,
+                href: postLink,
+                visited: false,
+              };
+              state.updateTracking.newPosts.push(postData);
+              state.feedsBody.posts.push(postData);
+            }
+          });
+        })
+          .catch((error) => {
+            if (error instanceof TypeError) {
+              state.feedback.feedbackText = i18nInstance.t('feedbackTexts.errorsTexts.invallidRSS');
+            } else {
+              state.feedback.feedbackText = i18nInstance.t('feedbackTexts.errorsTexts.networkErr');
+            }
+            state.feedback.feedbackColor = 'danger';
+          });
+      });
+      state.updateTracking.updateTrackingState = 'fulfilled';
+      updateTracking();
+    }, 5000);
+  };
+
   elements.form.addEventListener('submit', (e) => {
     e.preventDefault();
 
@@ -76,49 +141,42 @@ export default () => {
 
     validate(url).then(([isSuccessValidationBool, feedbackPath]) => {
       if (isSuccessValidationBool) {
-        axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(url)}`)
-          .then((response) => {
-            if (response.status === 200) return response.data;
-            throw new Error();
-          })
-          .then((data) => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(data.contents, 'application/xml');
+        getDOMobjFromURL(url).then((doc) => {
+          state.feedsBody.lastFeedID += 1;
+          const feedID = state.feedsBody.lastFeedID;
+          const feedTitle = doc.querySelector('title').textContent;
+          const feedDescription = doc.querySelector('description').textContent;
+          state.feedsBody.feeds.unshift({
+            title: feedTitle,
+            description: feedDescription,
+            id: feedID,
+            url,
+          });
 
-            state.feedsBody.lastFeedID += 1;
-            const feedID = state.feedsBody.lastFeedID;
-            const feedTitle = doc.querySelector('title').textContent;
-            const feedDescription = doc.querySelector('description').textContent;
-            state.feedsBody.feeds.unshift({
-              title: feedTitle,
-              description: feedDescription,
-              id: feedID,
+          const posts = doc.querySelectorAll('item');
+          const postsData = [];
+          posts.forEach((post) => {
+            state.feedsBody.lastPostID += 1;
+            const postID = state.feedsBody.lastPostID;
+            const postTitle = post.querySelector('title').textContent;
+            const postDescription = post.querySelector('description').textContent;
+            const postLink = post.querySelector('link').textContent;
+            postsData.push({
+              title: postTitle,
+              description: postDescription,
+              feedID,
+              id: postID,
+              href: postLink,
+              visited: false,
             });
+          });
+          state.feedsBody.posts = [...postsData, ...state.feedsBody.posts];
 
-            const posts = doc.querySelectorAll('item');
-            const postsData = [];
-            posts.forEach((post) => {
-              state.feedsBody.lastPostID += 1;
-              const postID = state.feedsBody.lastPostID;
-              const postTitle = post.querySelector('title').textContent;
-              const postDescription = post.querySelector('description').textContent;
-              const postLink = post.querySelector('link').textContent;
-              postsData.push({
-                title: postTitle,
-                description: postDescription,
-                feedID,
-                id: postID,
-                href: postLink,
-                visited: false,
-              });
-            });
-            state.feedsBody.posts = [...postsData, ...state.feedsBody.posts];
-
-            state.urlState = 'valid';
-            state.feedback.feedbackColor = 'success';
-            state.urlsList.push(url);
-            state.feedback.feedbackText = i18nInstance.t(feedbackPath);
-          })
+          state.urlState = 'valid';
+          state.feedback.feedbackColor = 'success';
+          state.urlsList.push(url);
+          state.feedback.feedbackText = i18nInstance.t(feedbackPath);
+        })
           .catch((error) => {
             if (error instanceof TypeError) {
               state.feedback.feedbackText = i18nInstance.t('feedbackTexts.errorsTexts.invallidRSS');
@@ -134,4 +192,6 @@ export default () => {
       }
     });
   });
+
+  updateTracking();
 };
