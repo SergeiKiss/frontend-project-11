@@ -8,6 +8,7 @@ export default () => {
   const elements = {
     form: document.querySelector('form'),
     input: document.querySelector('input'),
+    submitButton: document.querySelector('button[type="submit"]'),
     feedbackEl: document.querySelector('.feedback'),
     postsContainer: document.querySelector('.posts'),
     feedsContainer: document.querySelector('.feeds'),
@@ -27,7 +28,10 @@ export default () => {
   });
 
   const initialState = {
-    urlState: null,
+    form: {
+      urlState: null,
+      submitButtonDisabled: false,
+    },
     urlsList: [],
     feedback: {
       feedbackText: null,
@@ -135,7 +139,9 @@ export default () => {
   elements.form.addEventListener('submit', (e) => {
     e.preventDefault();
 
-    state.urlState = 'processing';
+    state.form.urlState = 'processing';
+    state.form.submitButtonDisabled = true;
+    state.feedback.feedbackText = '';
     const formData = new FormData(e.target);
     const url = formData.get('url').trim();
 
@@ -172,7 +178,8 @@ export default () => {
           });
           state.feedsBody.posts = [...postsData, ...state.feedsBody.posts];
 
-          state.urlState = 'valid';
+          state.form.urlState = 'valid';
+          state.form.submitButtonDisabled = false;
           state.feedback.feedbackColor = 'success';
           state.urlsList.push(url);
           state.feedback.feedbackText = i18nInstance.t(feedbackPath);
@@ -183,10 +190,12 @@ export default () => {
             } else {
               state.feedback.feedbackText = i18nInstance.t('feedbackTexts.errorsTexts.networkErr');
             }
+            state.form.submitButtonDisabled = false;
             state.feedback.feedbackColor = 'danger';
           });
       } else {
-        state.urlState = 'invalid';
+        state.form.urlState = 'invalid';
+        state.form.submitButtonDisabled = false;
         state.feedback.feedbackColor = 'danger';
         state.feedback.feedbackText = i18nInstance.t(feedbackPath);
       }

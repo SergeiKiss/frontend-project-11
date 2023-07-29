@@ -4,6 +4,7 @@ export default (initialState, elements, i18nInstance) => {
   const {
     form,
     input,
+    submitButton,
     feedbackEl,
     postsContainer,
     feedsContainer,
@@ -149,7 +150,7 @@ export default (initialState, elements, i18nInstance) => {
 
   const state = onChange(initialState, (path, curVal, prevVal) => {
     switch (path) {
-      case 'urlState':
+      case 'form.urlState':
         if (curVal === 'valid') {
           input.classList.remove('is-invalid');
           form.reset();
@@ -158,6 +159,10 @@ export default (initialState, elements, i18nInstance) => {
         } else if (curVal === 'invalid') {
           input.classList.add('is-invalid');
         }
+        break;
+
+      case 'form.submitButtonDisabled':
+        submitButton.disabled = curVal;
         break;
 
       case 'feedback.feedbackText':
