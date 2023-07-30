@@ -71,30 +71,27 @@ export default (initialState, elements, i18nInstance) => {
     button.textContent = i18nInstance.t('feedsBodyTexts.browseButton');
     li.append(button);
 
+    const changeVisitedLink = () => {
+      a.classList.remove('fw-bold');
+      a.classList.add('fw-normal', 'link-secondary');
+      state.feedsBody.posts.forEach((post) => {
+        if (id === post.id) {
+          const postToChange = post;
+          postToChange.visited = true;
+        }
+      });
+    };
+
     button.addEventListener('click', () => {
       modalTitle.textContent = title;
       modalBody.textContent = description;
       modalLink.setAttribute('href', href);
 
-      a.classList.remove('fw-bold');
-      a.classList.add('fw-normal', 'link-secondary');
-      state.feedsBody.posts.forEach((post) => {
-        if (id === post.id) {
-          const postToChange = post;
-          postToChange.visited = true;
-        }
-      });
+      changeVisitedLink();
     });
 
     a.addEventListener('click', () => {
-      a.classList.remove('fw-bold');
-      a.classList.add('fw-normal', 'link-secondary');
-      state.feedsBody.posts.forEach((post) => {
-        if (id === post.id) {
-          const postToChange = post;
-          postToChange.visited = true;
-        }
-      });
+      changeVisitedLink();
     });
 
     modalCloseBtns.forEach((btn) => {
@@ -148,6 +145,14 @@ export default (initialState, elements, i18nInstance) => {
     feedsContainer.append(feedsCardObj.card);
   };
 
+  const renderNewPosts = (state) => {
+    for (let i = 0; i < state.updateTracking.newPosts.length; i += 1) {
+      const postsCardObj = document.querySelector('#posts-list');
+      const postEl = createPostEl(state.updateTracking.newPosts.pop(), state);
+      postsCardObj.prepend(postEl);
+    }
+  };
+
   const state = onChange(initialState, (path, curVal, prevVal) => {
     switch (path) {
       case 'form.urlState':
@@ -158,6 +163,8 @@ export default (initialState, elements, i18nInstance) => {
           render(state);
         } else if (curVal === 'invalid') {
           input.classList.add('is-invalid');
+        } else {
+          input.classList.remove('is-invalid');
         }
         break;
 
@@ -176,13 +183,7 @@ export default (initialState, elements, i18nInstance) => {
         break;
 
       case 'updateTracking.updateTrackingState':
-        if (curVal === 'fulfilled') {
-          for (let i = 0; i < state.updateTracking.newPosts.length; i += 1) {
-            const postsCardObj = document.querySelector('#posts-list');
-            const postEl = createPostEl(state.updateTracking.newPosts.pop(), state);
-            postsCardObj.prepend(postEl);
-          }
-        }
+        if (curVal === 'fulfilled') renderNewPosts(state);
         break;
 
       default:
