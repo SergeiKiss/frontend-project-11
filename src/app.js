@@ -84,55 +84,64 @@ export default () => {
     })
     .then((data) => {
       const parser = new DOMParser();
-      const parsedData = parser.parseFromString(data.contents, 'application/xml');
-      return parsedData;
+      const doc = parser.parseFromString(data.contents, 'application/xml');
+      const errorNode = doc.querySelector('parsererror');
+      if (errorNode) throw Error('invallidRSS');
+      return doc;
+    })
+    .catch((error) => {
+      if (error.message === 'invallidRSS') {
+        state.feedback.feedbackText = i18nInstance.t('feedbackTexts.errorsTexts.invallidRSS');
+      } else {
+        state.feedback.feedbackText = i18nInstance.t('feedbackTexts.errorsTexts.networkErr');
+      }
+      state.form.submitButtonDisabled = false;
+      state.feedback.feedbackColor = 'danger';
     });
+
+  const createPostData = (post, feedID) => {
+    state.feedsBody.lastPostID += 1;
+    const postID = state.feedsBody.lastPostID;
+    const postTitle = post.querySelector('title').textContent;
+    const postDescription = post.querySelector('description').textContent;
+    const postLink = post.querySelector('link').textContent;
+    const postData = {
+      title: postTitle,
+      description: postDescription,
+      feedID,
+      id: postID,
+      href: postLink,
+      visited: false,
+    };
+    return postData;
+  };
 
   const updateTracking = () => {
     setTimeout(() => {
       state.updateTracking.updateTrackingState = 'processing';
       const { feeds } = state.feedsBody;
-      feeds.forEach((feed) => {
-        let skipNeeded = false;
+      for (let i = 0; i < feeds.length; i += 1) {
+        const feed = feeds[i];
         getDOMobjFromURL(feed.url).then((doc) => {
           const posts = doc.querySelectorAll('item');
-          posts.forEach((post) => {
-            if (skipNeeded) return;
+          for (let j = 0; j < posts.length; j += 1) {
+            const post = posts[j];
             const postTitle = post.querySelector('title').textContent;
             let postFound = false;
-            state.feedsBody.posts.forEach((p) => {
-              if (postFound) return;
-              if (feed.id === p.feedID && postTitle === p.title) postFound = true;
-            });
-            if (postFound) {
-              skipNeeded = true;
-            } else {
-              state.feedsBody.lastPostID += 1;
-              const postID = state.feedsBody.lastPostID;
-              const postDescription = post.querySelector('description').textContent;
-              const postLink = post.querySelector('link').textContent;
-              const postData = {
-                title: postTitle,
-                description: postDescription,
-                feedID: feed.id,
-                id: postID,
-                href: postLink,
-                visited: false,
-              };
-              state.updateTracking.newPosts.push(postData);
-              state.feedsBody.posts.push(postData);
+            for (let l = 0; l < state.feedsBody.posts.length; l += 1) {
+              const p = state.feedsBody.posts[l];
+              if (feed.id === p.feedID && postTitle === p.title) {
+                postFound = true;
+                break;
+              }
             }
-          });
-        })
-          .catch((error) => {
-            if (error instanceof TypeError) {
-              state.feedback.feedbackText = i18nInstance.t('feedbackTexts.errorsTexts.invallidRSS');
-            } else {
-              state.feedback.feedbackText = i18nInstance.t('feedbackTexts.errorsTexts.networkErr');
-            }
-            state.feedback.feedbackColor = 'danger';
-          });
-      });
+            if (postFound) break;
+            const postData = createPostData(post, feed.id);
+            state.updateTracking.newPosts.push(postData);
+            state.feedsBody.posts.push(postData);
+          }
+        }).catch(() => {});
+      }
       state.updateTracking.updateTrackingState = 'fulfilled';
       updateTracking();
     }, 5000);
@@ -164,19 +173,8 @@ export default () => {
           const posts = doc.querySelectorAll('item');
           const postsData = [];
           posts.forEach((post) => {
-            state.feedsBody.lastPostID += 1;
-            const postID = state.feedsBody.lastPostID;
-            const postTitle = post.querySelector('title').textContent;
-            const postDescription = post.querySelector('description').textContent;
-            const postLink = post.querySelector('link').textContent;
-            postsData.push({
-              title: postTitle,
-              description: postDescription,
-              feedID,
-              id: postID,
-              href: postLink,
-              visited: false,
-            });
+            const postData = createPostData(post, feedID);
+            postsData.push(postData);
           });
           state.feedsBody.posts = [...postsData, ...state.feedsBody.posts];
 
@@ -185,16 +183,7 @@ export default () => {
           state.feedback.feedbackColor = 'success';
           state.urlsList.push(url);
           state.feedback.feedbackText = i18nInstance.t(feedbackPath);
-        })
-          .catch((error) => {
-            if (error instanceof TypeError) {
-              state.feedback.feedbackText = i18nInstance.t('feedbackTexts.errorsTexts.invallidRSS');
-            } else {
-              state.feedback.feedbackText = i18nInstance.t('feedbackTexts.errorsTexts.networkErr');
-            }
-            state.form.submitButtonDisabled = false;
-            state.feedback.feedbackColor = 'danger';
-          });
+        }).catch(() => {});
       } else {
         state.form.urlState = 'invalid';
         state.form.submitButtonDisabled = false;
