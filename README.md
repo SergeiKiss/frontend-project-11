@@ -6,6 +6,6 @@
 link - https://frontend-project-11-delta-six.vercel.app/
 
 **Project description**<br>
-My third Hexlet project is a service for aggregating RSS feeds, with which it is convenient to read various sources, such as blogs. It allows you to add an unlimited number of RSS feeds, updates them itself and adds new entries to the general feed.
+My third Hexlet JS project is a service for aggregating RSS feeds, with which it is convenient to read various sources, such as blogs. It allows you to add an unlimited number of RSS feeds, updates them itself and adds new entries to the general feed.
 
 **Stack**: JavaScript, DOM, webpack, Bootstrap, AJAX, yup, on-change, i18next
